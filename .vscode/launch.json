@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "FlowForge-Backend-REST<flow-forge-backend-rest>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "ru.spb.tksoft.flowforge.backend.rest.FlowForgeBackendRestApplication",
+            "projectName": "flow-forge-backend-rest",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
