@@ -123,7 +123,6 @@ public class InstanceProcessingUnit {
      * @param timeout - timeout.
      * @param unit - time unit.
      * @throws InterruptedException - if the thread is interrupted.
-     * @throws TimeoutException - if the timeout is reached.
      */
     public synchronized void stopProcessing(final long timeout, final TimeUnit unit) {
 
@@ -158,10 +157,6 @@ public class InstanceProcessingUnit {
      * Processing pool is not necessarily a queue. It can be a set, a list, a map, etc.
      * 
      * @param instance - instance.
-     * @param parameters - instance parameters.
-     * @throws NullArgumentException - if instance or one of its fields is null.
-     * @throws InstanceNotFoundException - if instance.getInstanceId() is not greater than 0 or
-     *         instance.getInstanceName() is blank.
      * @throws ObjectAlreadyExistsException - if instance already exists.
      * @throws InstanceAddFailedException - if instance add failed.
      */
@@ -248,10 +243,7 @@ public class InstanceProcessingUnit {
     /**
      * Run instance.
      * 
-     * @param instanceId - instance ID.
-     * @throws NullArgumentException - if instanceId is null or blank.
-     * @throws InstanceNotFoundException - if instance not found.
-     * @throws CommandFailedException - if command failed.
+     * @param instanceEntry - instance entry.
      * @throws ConfigurationMismatchException - if instance is not configured.
      */
     protected void runInstance(final InstanceEntry instanceEntry) {
