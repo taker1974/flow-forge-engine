@@ -14,8 +14,8 @@
 
 package ru.spb.tksoft.flowforge.engine.model;
 
-import ru.spb.tksoft.common.exception.ConfigurationMismatchException;
-import ru.spb.tksoft.common.exception.NullArgumentException;
+import ru.spb.tksoft.common.exceptions.ConfigurationMismatchException;
+import ru.spb.tksoft.common.exceptions.NullArgumentException;
 import ru.spb.tksoft.flowforge.engine.contract.Instance;
 import ru.spb.tksoft.flowforge.sdk.contract.Block;
 import ru.spb.tksoft.flowforge.sdk.contract.EventListener;

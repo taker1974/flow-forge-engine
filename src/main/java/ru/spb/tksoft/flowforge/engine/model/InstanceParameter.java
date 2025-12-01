@@ -15,7 +15,7 @@
 package ru.spb.tksoft.flowforge.engine.model;
 
 import lombok.Value;
-import ru.spb.tksoft.common.exception.NullArgumentException;
+import ru.spb.tksoft.common.exceptions.NullArgumentException;
 
 /**
  * InstanceParameter class.

@@ -21,8 +21,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import ru.spb.tksoft.common.exception.NullArgumentException;
-import ru.spb.tksoft.common.exception.ObjectAlreadyExistsException;
+import ru.spb.tksoft.common.exceptions.NullArgumentException;
+import ru.spb.tksoft.common.exceptions.ObjectAlreadyExistsException;
 import ru.spb.tksoft.flowforge.engine.model.InstanceParameters;
 import ru.spb.tksoft.flowforge.engine.model.InstanceParameter;
 

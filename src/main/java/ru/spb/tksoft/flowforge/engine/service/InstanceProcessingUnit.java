@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 import ru.spb.tksoft.flowforge.sdk.enumeration.RunnableState;
 import ru.spb.tksoft.flowforge.engine.exception.CommandFailedException;
 import ru.spb.tksoft.flowforge.engine.exception.InstanceAddFailedException;
-import ru.spb.tksoft.common.exception.NullArgumentException;
+import ru.spb.tksoft.common.exceptions.NullArgumentException;
 import ru.spb.tksoft.utils.log.LogEx;
 import java.time.Duration;
 import java.util.List;
@@ -32,8 +32,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import ru.spb.tksoft.common.exception.ConfigurationMismatchException;
-import ru.spb.tksoft.common.exception.ObjectAlreadyExistsException;
+import ru.spb.tksoft.common.exceptions.ConfigurationMismatchException;
+import ru.spb.tksoft.common.exceptions.ObjectAlreadyExistsException;
 import ru.spb.tksoft.flowforge.engine.contract.Instance;
 
 /**
@@ -175,7 +175,7 @@ public class InstanceProcessingUnit {
 
         } catch (Exception e) {
             throw new InstanceAddFailedException(
-                    "failed to add instance " + instance.getInstanceId());
+                    "failed to add instance " + instance.getInstanceId(), e);
         }
 
         LogEx.trace(log, LogEx.me(), LogEx.STOPPED);

@@ -18,8 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import jakarta.validation.constraints.NotNull;
-import ru.spb.tksoft.common.exception.ObjectAlreadyExistsException;
-import ru.spb.tksoft.common.exception.NullArgumentException;
+import ru.spb.tksoft.common.exceptions.ObjectAlreadyExistsException;
+import ru.spb.tksoft.common.exceptions.NullArgumentException;
 
 /**
  * Instance parameters.

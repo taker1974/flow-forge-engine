@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
-import ru.spb.tksoft.common.exception.NullArgumentException;
+import ru.spb.tksoft.common.exceptions.NullArgumentException;
 import ru.spb.tksoft.flowforge.engine.model.InstanceParameter;
 
 /**
@@ -78,9 +78,9 @@ class InstanceParameterTest {
         InstanceParameter param2 = new InstanceParameter("block1", "value1");
         InstanceParameter param3 = new InstanceParameter("block2", "value1");
 
-        assertThat(param1).isEqualTo(param2);
-        assertThat(param1).isNotEqualTo(param3);
-        assertThat(param1.hashCode()).isEqualTo(param2.hashCode());
+        assertThat(param1).isEqualTo(param2)
+                .hasSameHashCodeAs(param2)
+                .isNotEqualTo(param3);
     }
 }
 

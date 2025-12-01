@@ -15,7 +15,7 @@
 package ru.spb.tksoft.flowforge.engine.exception;
 
 import java.util.Objects;
-import ru.spb.tksoft.common.exception.TkBaseException;
+import ru.spb.tksoft.common.exceptions.TkBaseException;
 
 /**
  * Instance add failed.
@@ -46,5 +46,26 @@ public class InstanceAddFailedException extends TkBaseException {
     public InstanceAddFailedException(String subMessage) {
 
         super(CODE, MESSAGE + ": " + (Objects.isNull(subMessage) ? "" : subMessage));
+    }
+
+    /**
+     * Constructor with cause.
+     * 
+     * @param cause - cause.
+     */
+    public InstanceAddFailedException(Throwable cause) {
+
+        super(CODE, MESSAGE, cause);
+    }
+
+    /**
+     * Constructor with additional message and cause.
+     * 
+     * @param subMessage - additional message.
+     * @param cause - cause.
+     */
+    public InstanceAddFailedException(String subMessage, Throwable cause) {
+
+        super(CODE, MESSAGE + ": " + (Objects.isNull(subMessage) ? "" : subMessage), cause);
     }
 }
