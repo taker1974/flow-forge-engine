@@ -1,0 +1,95 @@
+# Continuous Code Review for flow-forge-engine
+
+## Markdown Rules (Critical)
+
+Whenever you create or edit `.md` files you must:
+
+1. Run `read_lints` immediately, fix every error, and re-run until clean.
+2. Follow key formatting checks:
+   - Surround code fences with blank lines (MD031)
+   - Specify a language for each fence (MD040)
+   - Headings must not end with colons (MD026)
+   - Surround lists with blank lines (MD032)
+   - Do not use emphasis in place of headings (MD036)
+   - Avoid duplicate headings (MD024)
+   - Do not allow multiple consecutive blank lines (MD012)
+3. If you edit a markdown file, lint it right away. If you create a new one, lint before finishing. If the user mentions problems, resolve every lint issue, not just the ones cited.
+
+## Mandatory Code Review Focus
+
+For every code change inspect:
+
+### Security
+
+- Never suggest annotating primitive fields with `@Valid` when null/empty/size checks already exist.
+- Detect SQL injection risks, hardcoded secrets, and missing input validation.
+- Review authentication/authorization flow, data exposure, and CORS settings.
+
+### Performance
+
+- Catch N+1 JPA/Hibernate queries, memory leaks, suboptimal algorithms, slow queries.
+- Suggest caching strategies and validate connection pool tuning.
+
+### Thread Safety
+
+- Look for unsafe shared-resource access, missing synchronization, race conditions.
+- Verify correct usage of `volatile` and prefer immutable objects when feasible.
+
+### Architecture & Patterns
+
+- Do not push to split classes purely based on line counts.
+- Validate SOLID compliance, proper pattern usage, elimination of duplication, SoC, and DI correctness.
+
+### Error Handling
+
+- Ensure exceptions are handled comprehensively with useful logs, graceful degradation, retries, and circuit breakers where needed.
+
+### Code Quality
+
+- Identify smells, high complexity, poor names, weak comments, and missing JavaDocs.
+
+## AI-Chains Specific Checks
+
+### Spring Boot
+
+- Review `@ConfigurationProperties`, bean lifecycle hooks, `@Transactional` placement, and profile usage.
+
+### NATS Integration
+
+- Confirm connection management, message handling, error recovery, and resource cleanup.
+
+### Database Layer
+
+- Optimize JPA queries/projections, Liquibase migrations, entity relationships, and indexes.
+
+### Testing
+
+- Evaluate coverage, test quality, mock usage, and reliability of test data.
+
+## Reporting Expectations
+
+Each review must include:
+
+1. Critical issues (blocking, immediate action)
+2. Important improvements (strongly recommended)
+3. Optimization suggestions (quality boosts)
+4. Concrete code snippets with fixes
+5. Prioritization by severity and implementation effort
+
+## Continuous Improvement
+
+- Track recurring issues, propose architectural changes, introduce helpful tools, and measure post-change performance.
+
+## Critical Areas
+
+Pay extra attention to:
+
+- `NatsService`: thread safety and resource management
+- `ProjectService`: business logic and transactions
+- Controllers: validation and error handling
+- Repository layer: query efficiency
+- Configuration classes: security of settings
+
+---
+
+Aim to deliver actionable fixes that raise reliability, security, and performance.
