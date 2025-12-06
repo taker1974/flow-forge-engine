@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -48,6 +49,9 @@ import ru.spb.tksoft.utils.log.LogEx;
 public class BlockRegistryImpl implements BlockRegistry {
 
     private static final Logger log = LoggerFactory.getLogger(BlockRegistryImpl.class);
+
+    /** Block plugin jar file extension. */
+    private static final String PLUGIN_JAR_EXT = "ffb";
 
     // <editor-fold desc="Versions">
 
@@ -113,22 +117,24 @@ public class BlockRegistryImpl implements BlockRegistry {
         // @formatter:off
         // - modules/
         //   - block-type-a/
-        //     - block-type-a-impl.jar
+        //     - block-type-a-impl.ffb
         //     - block-type-a-dep-n.jar
         //   - block-type-b/
-        //     - block-type-b-impl.jar
+        //     - block-type-b-impl.ffb
         //     - block-type-b-dep-n.jar
         //   - ...
         // where:
-        // - block-type-X-impl.jar - module containing Block implementation class with attribute @BlockPlugin,
+        // - block-type-X-impl.ffb - module containing Block implementation class with attribute @BlockPlugin,
         //   and dependencies for the block implementation.
-        // CHECKSTYLE:ON
         // @formatter:on
-        try (Stream<Path> paths = Files.walk(topLevelModulesDirectoryPath)) {
+        // CHECKSTYLE:ON
+
+        loadedBlocks.clear();
+
+        try (Stream<Path> paths = Files.list(topLevelModulesDirectoryPath)) {
             var moduleDirectoryPaths = paths.filter(Files::isDirectory).toList();
 
             for (Path moduleDirectoryPath : moduleDirectoryPaths) {
-                loadedBlocks.clear();
                 Map<String, LoadedBlock> blocks = loadBlocksFromDirectory(moduleDirectoryPath,
                         compatibleEngineVersions, rootModuleVersions);
                 loadedBlocks.putAll(blocks);
@@ -204,13 +210,34 @@ public class BlockRegistryImpl implements BlockRegistry {
     private static boolean isModuleCompatible(final ModuleReference reference,
             final Map<String, String> rootModuleVersions) {
 
-        Map<String, String> moduleDependencies = getModuleDependencies(reference);
-        for (Map.Entry<String, String> moduleDependencyEntry : moduleDependencies.entrySet()) {
-            if (!isModuleDependencyVersionCompatible(moduleDependencyEntry, rootModuleVersions)) {
-                return false;
-            }
+        // Check only the version of the module itself, not its dependencies.
+        // Dependencies are resolved by ModuleFinder, not by version checking.
+        String moduleName = reference.descriptor().name();
+        Optional<ModuleDescriptor.Version> versionOpt = reference.descriptor().version();
+        String moduleVersion = versionOpt.map(ModuleDescriptor.Version::toString).orElse("");
+
+        // If root module versions are not specified, then all module versions are compatible by
+        // default.
+        if (Objects.isNull(rootModuleVersions)) {
+            return true;
         }
-        return true;
+
+        // If the module is not in rootModuleVersions, it's compatible (we only check versions
+        // for modules that are explicitly listed).
+        if (!rootModuleVersions.containsKey(moduleName)) {
+            return true;
+        }
+
+        // If the module doesn't have a version in module-info.class, it's compatible
+        // (we can't check version compatibility for modules without versions).
+        if (versionOpt.isEmpty() || moduleVersion.isBlank()) {
+            return true;
+        }
+
+        // Check if the module version matches the required version.
+        String requiredVersion = rootModuleVersions.get(moduleName);
+        return Objects.nonNull(requiredVersion) && !requiredVersion.isBlank()
+                && requiredVersion.equals(moduleVersion);
     }
 
     /**
@@ -226,60 +253,6 @@ public class BlockRegistryImpl implements BlockRegistry {
         return Objects.nonNull(engineVersion) && !engineVersion.isBlank() &&
                 Objects.nonNull(compatibleEngineVersions) && !compatibleEngineVersions.isEmpty()
                 && compatibleEngineVersions.contains(engineVersion);
-    }
-
-    /**
-     * Check if the module dependency version is compatible with the given root module versions.
-     * 
-     * @param moduleDependencyEntry - the module dependency entry (module name and version).
-     * @param rootModuleVersions - the map of root module names and their actual versions
-     *        (optional).
-     * @return true if root module versions are not specified, then all module versions are
-     *         compatible by default, or the module version is compatible with the given root module
-     *         versions.
-     */
-    private static boolean isModuleDependencyVersionCompatible(
-            final Map.Entry<String, String> moduleDependencyEntry,
-            final Map<String, String> rootModuleVersions) {
-
-        // If root module versions are not specified, then all module versions are compatible by
-        // default.
-        if (Objects.isNull(rootModuleVersions)) {
-            return true;
-        }
-
-        if (Objects.isNull(moduleDependencyEntry)) {
-            return false;
-        }
-
-        final String moduleName = moduleDependencyEntry.getKey();
-        if (Objects.isNull(moduleName) || moduleName.isBlank()) {
-            return false;
-        }
-
-        final String moduleVersion = moduleDependencyEntry.getValue();
-        if (Objects.isNull(moduleVersion) || moduleVersion.isBlank()) {
-            return false;
-        }
-
-        return rootModuleVersions.containsKey(moduleName)
-                && rootModuleVersions.get(moduleName).equals(moduleVersion);
-    }
-
-    /**
-     * Get module dependencies.
-     * 
-     * @param reference - the module reference.
-     * @return the map of dependency module names and their versions.
-     */
-    private static Map<String, String> getModuleDependencies(final ModuleReference reference) {
-
-        return reference.descriptor().requires().stream()
-                .collect(Collectors.toMap(
-                        ModuleDescriptor.Requires::name,
-                        requires -> requires.compiledVersion()
-                                .map(ModuleDescriptor.Version::toString)
-                                .orElse("")));
     }
 
     /**
@@ -347,7 +320,12 @@ public class BlockRegistryImpl implements BlockRegistry {
     @Override
     public Block createBlock(final String blockTypeId, Object... ctorArgs) {
 
-        Class<? extends Block> blockType = loadedBlocks.get(blockTypeId).type();
+        var loadedBlock = loadedBlocks.get(blockTypeId);
+        if (Objects.isNull(loadedBlock)) {
+            throw new IllegalArgumentException("Block type id " + blockTypeId + " not found");
+        }
+
+        Class<? extends Block> blockType = loadedBlock.type();
         for (Constructor<?> ctor : blockType.getConstructors()) {
 
             if (!areCompatible(ctor, ctorArgs)) {
