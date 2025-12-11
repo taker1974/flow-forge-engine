@@ -24,7 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.spb.tksoft.flowforge.engine.contract.BlockRegistry;
-import ru.spb.tksoft.flowforge.engine.model.BlockRegistryFromCratchImpl;
+import ru.spb.tksoft.flowforge.engine.model.BlockRegistryImpl;
+import ru.spb.tksoft.flowforge.sdk.contract.Block;
 
 /**
  * Tests for BlockRegistryImpl.
@@ -44,7 +45,7 @@ class BlockRegistryImplTest {
      * @param path - the path to load blocks from.
      */
     @Test
-    void loadBlocks() {
+    void loadBlockBuilderServices() {
 
         // Load blocks from the specified path.
         String dataHome = System.getenv("XDG_DATA_HOME");
@@ -52,27 +53,31 @@ class BlockRegistryImplTest {
             dataHome = System.getProperty("user.home") + "/.local/share";
         }
 
-        BlockRegistry blockRegistry = new BlockRegistryFromCratchImpl(
-                Set.of("2.0.5"),
-                Dependencies.dependencies());
+        BlockRegistry blockRegistry = new BlockRegistryImpl(Set.of("2.0.5"));
 
         final Path blocksPath = Paths.get(dataHome,
                 applicationName, blocksSubdirectory);
 
         try {
-            blockRegistry.loadBlocks(blocksPath);
+            blockRegistry.loadBlockBuilderServices(blocksPath, true);
             // If we get here, blocks were loaded successfully
             assertTrue(true, "Blocks loaded successfully");
         } catch (Exception e) {
             Assertions.fail("Failed to load blocks from path: " + blocksPath, e);
         }
 
-        // // Create a block.
-        // // Note: first argument is the block type id!
-        // Block block = blockRegistry.createBlock(/* block type id */ "example-block-01",
-        // /* constructor arguments */ "block-start", "Some input text...");
+        // Create a block.
+        // Note: first argument is the block type id!
+        String blockTypeId1 = "example-block-01";
+        Block block1 = blockRegistry.createBlock(blockTypeId1,
+                "block-1", "Some input text for block 1...");
 
-        // assertNotNull(block);
+        String blockTypeId2 = "example-block-02";
+        Block block2 = blockRegistry.createBlock(blockTypeId2,
+                "block-2", "Some input text for block 2...");
+
+        Assertions.assertNotNull(block1);
+        Assertions.assertNotNull(block2);
     }
 }
 
