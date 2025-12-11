@@ -14,7 +14,7 @@
 
 package ru.spb.tksoft.flowforge.engine;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.Assertions;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -67,13 +67,13 @@ class InstanceImplTest {
 
     @Test
     void testConstructor() {
-        assertThat(instance.getTemplateId()).isEqualTo(TEMPLATE_ID);
-        assertThat(instance.getInstanceId()).isEqualTo(INSTANCE_ID);
-        assertThat(instance.getInstanceUserId()).isEqualTo(INSTANCE_USER_ID);
-        assertThat(instance.getInstanceName()).isEqualTo(INSTANCE_NAME);
-        assertThat(instance.getState()).isEqualTo(RunnableState.READY);
-        assertThat(instance.isModified()).isTrue();
-        assertThat(instance.hasError()).isFalse();
+        Assertions.assertThat(instance.getTemplateId()).isEqualTo(TEMPLATE_ID);
+        Assertions.assertThat(instance.getInstanceId()).isEqualTo(INSTANCE_ID);
+        Assertions.assertThat(instance.getInstanceUserId()).isEqualTo(INSTANCE_USER_ID);
+        Assertions.assertThat(instance.getInstanceName()).isEqualTo(INSTANCE_NAME);
+        Assertions.assertThat(instance.getState()).isEqualTo(RunnableState.READY);
+        Assertions.assertThat(instance.isModified()).isTrue();
+        Assertions.assertThat(instance.hasError()).isFalse();
     }
 
     @Test
@@ -123,7 +123,7 @@ class InstanceImplTest {
         InstanceImpl inst = new InstanceImpl(INSTANCE_ID, TEMPLATE_ID, INSTANCE_USER_ID,
                 INSTANCE_NAME, null, blocks, lines);
 
-        assertThat(inst).isNotNull();
+        Assertions.assertThat(inst).isNotNull();
     }
 
     @Test
@@ -131,7 +131,7 @@ class InstanceImplTest {
         InstanceImpl inst = new InstanceImpl(INSTANCE_ID, TEMPLATE_ID, INSTANCE_USER_ID,
                 INSTANCE_NAME, parameters, null, lines);
 
-        assertThat(inst).isNotNull();
+        Assertions.assertThat(inst).isNotNull();
     }
 
     @Test
@@ -139,7 +139,7 @@ class InstanceImplTest {
         InstanceImpl inst = new InstanceImpl(INSTANCE_ID, TEMPLATE_ID, INSTANCE_USER_ID,
                 INSTANCE_NAME, parameters, blocks, null);
 
-        assertThat(inst).isNotNull();
+        Assertions.assertThat(inst).isNotNull();
     }
 
     @Test
@@ -160,14 +160,14 @@ class InstanceImplTest {
         instance.resetModified();
         instance.setModified();
 
-        assertThat(instance.isModified()).isTrue();
+        Assertions.assertThat(instance.isModified()).isTrue();
     }
 
     @Test
     void testResetModified() {
         instance.resetModified();
 
-        assertThat(instance.isModified()).isFalse();
+        Assertions.assertThat(instance.isModified()).isFalse();
     }
 
     @Test
@@ -186,7 +186,7 @@ class InstanceImplTest {
 
         List<Modifiable> modifiedObjects = instance.getModifiedObjects();
 
-        assertThat(modifiedObjects)
+        Assertions.assertThat(modifiedObjects)
                 .hasSize(2)
                 .contains(block1, line1)
                 .doesNotContain(block2);
@@ -196,7 +196,7 @@ class InstanceImplTest {
     void testGetModifiedObjectsWithEmptyLists() {
         List<Modifiable> modifiedObjects = instance.getModifiedObjects();
 
-        assertThat(modifiedObjects).isEmpty();
+        Assertions.assertThat(modifiedObjects).isEmpty();
     }
 
     @Test
@@ -208,8 +208,8 @@ class InstanceImplTest {
 
         instance.stop();
 
-        assertThat(instance.getState()).isEqualTo(RunnableState.STOPPED);
-        assertThat(instance.isModified()).isTrue();
+        Assertions.assertThat(instance.getState()).isEqualTo(RunnableState.STOPPED);
+        Assertions.assertThat(instance.isModified()).isTrue();
         verify(block).stop();
         verify(line).setState(LineState.OFF);
     }
@@ -223,8 +223,8 @@ class InstanceImplTest {
 
         instance.abort();
 
-        assertThat(instance.getState()).isEqualTo(RunnableState.ABORTED);
-        assertThat(instance.isModified()).isTrue();
+        Assertions.assertThat(instance.getState()).isEqualTo(RunnableState.ABORTED);
+        Assertions.assertThat(instance.isModified()).isTrue();
         verify(block).abort();
         verify(line).setState(LineState.OFF);
     }
@@ -238,9 +238,9 @@ class InstanceImplTest {
 
         instance.reset();
 
-        assertThat(instance.getState()).isEqualTo(RunnableState.READY);
-        assertThat(instance.hasError()).isFalse();
-        assertThat(instance.isModified()).isTrue();
+        Assertions.assertThat(instance.getState()).isEqualTo(RunnableState.READY);
+        Assertions.assertThat(instance.hasError()).isFalse();
+        Assertions.assertThat(instance.isModified()).isTrue();
         verify(block).reset();
         verify(line).reset();
     }
@@ -258,7 +258,7 @@ class InstanceImplTest {
 
         instance.run();
 
-        assertThat(instance.getState()).isEqualTo(RunnableState.RUNNING);
+        Assertions.assertThat(instance.getState()).isEqualTo(RunnableState.RUNNING);
     }
 
     @Test
@@ -309,7 +309,7 @@ class InstanceImplTest {
 
         // First run to set state to RUNNING and add block1 to plan
         instance.run();
-        assertThat(instance.getState()).isEqualTo(RunnableState.RUNNING);
+        Assertions.assertThat(instance.getState()).isEqualTo(RunnableState.RUNNING);
 
         // Second run to execute block1 from plan
         instance.run();
@@ -325,7 +325,7 @@ class InstanceImplTest {
         instance.removeListener(listener);
 
         // Verify listeners can be added and removed
-        assertThat(instance).isNotNull();
+        Assertions.assertThat(instance).isNotNull();
     }
 }
 

@@ -14,7 +14,7 @@
 
 package ru.spb.tksoft.flowforge.engine;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.Assertions;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Arrays;
@@ -37,7 +37,7 @@ class InstanceParametersTest {
     void testConstructorWithEmptyList() {
         InstanceParameters parameters = new InstanceParameters(Collections.emptyList());
 
-        assertThat(parameters.getParameter("block1")).isNull();
+        Assertions.assertThat(parameters.getParameter("block1")).isNull();
     }
 
     @Test
@@ -78,9 +78,9 @@ class InstanceParametersTest {
 
         InstanceParameters parameters = new InstanceParameters(params);
 
-        assertThat(parameters.getParameter("block1")).isEqualTo(param1);
-        assertThat(parameters.getParameter("block2")).isEqualTo(param2);
-        assertThat(parameters.getParameter("block3")).isNull();
+        Assertions.assertThat(parameters.getParameter("block1")).isEqualTo(param1);
+        Assertions.assertThat(parameters.getParameter("block2")).isEqualTo(param2);
+        Assertions.assertThat(parameters.getParameter("block3")).isNull();
     }
 
     @Test

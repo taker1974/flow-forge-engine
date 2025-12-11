@@ -14,7 +14,7 @@
 
 package ru.spb.tksoft.flowforge.engine;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.Assertions;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,8 +42,8 @@ class ModifiableChangedEventTest {
         List<Modifiable> modifiedObjects = Collections.singletonList(modifiable);
         ModifiableChangedEvent event = new ModifiableChangedEvent(instance, modifiedObjects);
 
-        assertThat(event.getInstance()).isEqualTo(instance);
-        assertThat(event.getModifiedObjects()).isEqualTo(modifiedObjects);
+        Assertions.assertThat(event.getInstance()).isEqualTo(instance);
+        Assertions.assertThat(event.getModifiedObjects()).isEqualTo(modifiedObjects);
     }
 
     @Test
@@ -51,16 +51,16 @@ class ModifiableChangedEventTest {
         List<Modifiable> modifiedObjects = Collections.emptyList();
         ModifiableChangedEvent event = new ModifiableChangedEvent(instance, modifiedObjects);
 
-        assertThat(event.getInstance()).isEqualTo(instance);
-        assertThat(event.getModifiedObjects()).isEmpty();
+        Assertions.assertThat(event.getInstance()).isEqualTo(instance);
+        Assertions.assertThat(event.getModifiedObjects()).isEmpty();
     }
 
     @Test
     void testConstructorWithNullList() {
         ModifiableChangedEvent event = new ModifiableChangedEvent(instance, null);
 
-        assertThat(event.getInstance()).isEqualTo(instance);
-        assertThat(event.getModifiedObjects()).isNull();
+        Assertions.assertThat(event.getInstance()).isEqualTo(instance);
+        Assertions.assertThat(event.getModifiedObjects()).isNull();
     }
 }
 

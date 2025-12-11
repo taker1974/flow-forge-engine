@@ -25,12 +25,15 @@ import ru.spb.tksoft.flowforge.sdk.contract.Block;
 public interface BlockRegistry {
 
     /**
-     * Load blocks from the modules directory.
+     * Load block builder services from the top level modules directory.
      * 
-     * @param modulesDirectoryPath - the modules directory path.
+     * @param topLevelModulesDirectoryPath - the top level modules directory path.
+     * @param removeDuplicateDependencies - true if duplicate dependencies should be removed from
+     *        the modules directories.
      * @throws IOException - if an I/O error occurs.
      */
-    void loadBlocks(Path modulesDirectoryPath) throws IOException;
+    void loadBlockBuilderServices(Path topLevelModulesDirectoryPath,
+            boolean removeDuplicateDependencies) throws IOException;
 
     /**
      * Create a block.
