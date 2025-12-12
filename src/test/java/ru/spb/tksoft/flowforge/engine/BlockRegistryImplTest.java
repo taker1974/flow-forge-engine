@@ -40,7 +40,11 @@ class BlockRegistryImplTest {
     private final String blocksSubdirectory = "blocks";
 
     /**
-     * Load blocks from the specified path.
+     * Load block builder services from the specified path.
+     * 
+     * NOTE: This test depends on the presence of the blocks subdirectory in the data home directory
+     * ~/.local/share/flow-forge-backend-instance/blocks with subfolders like "example-block-01"
+     * with jar files inside.
      *
      * @param path - the path to load blocks from.
      */
@@ -78,6 +82,8 @@ class BlockRegistryImplTest {
 
         Assertions.assertNotNull(block1);
         Assertions.assertNotNull(block2);
+
+        blockRegistry.close();
     }
 }
 

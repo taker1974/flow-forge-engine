@@ -21,6 +21,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,15 +29,18 @@ import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.validation.constraints.NotNull;
 import ru.spb.tksoft.common.exceptions.ConfigurationMismatchException;
+import ru.spb.tksoft.common.exceptions.NullArgumentException;
 import ru.spb.tksoft.flowforge.engine.contract.BlockRegistry;
 import ru.spb.tksoft.flowforge.sdk.contract.Block;
 import ru.spb.tksoft.flowforge.sdk.contract.BlockBuilderService;
 import ru.spb.tksoft.utils.log.LogEx;
+import ru.spb.tksoft.utils.log.LogFx;
 
 /**
  * Block registry implementation.
@@ -56,7 +60,6 @@ public class BlockRegistryImpl implements BlockRegistry {
     /**
      * Acceptable engine versions from {@link BlockBuilderService#getExpectedEngineVersion()}.
      */
-    @NotNull
     private final Set<String> acceptableEngineVersions;
 
     /**
@@ -67,15 +70,46 @@ public class BlockRegistryImpl implements BlockRegistry {
      */
     public BlockRegistryImpl(final Set<String> acceptableEngineVersions) {
 
-        this.acceptableEngineVersions = acceptableEngineVersions;
+        if (Objects.isNull(acceptableEngineVersions) || acceptableEngineVersions.isEmpty()) {
+            throw new ConfigurationMismatchException(
+                    "acceptableEngineVersions must be non-null and non-empty");
+        }
+
+        this.acceptableEngineVersions = Set.copyOf(acceptableEngineVersions);
     }
 
     /**
-     * Map of block builder services by block type id.
+     * Immutable holder for registry state. Used for atomic state replacement.
+     *
+     * @param services - the map of block builder services by block type id.
+     * @param classLoaders - the list of module ClassLoaders.
      */
-    @NotNull
-    private final Map<String/* block type id */, BlockBuilderService> blockBuilderServices =
-            new ConcurrentHashMap<>();
+    private record RegistryState(
+            Map<String, BlockBuilderService> services,
+            List<URLClassLoader> classLoaders) {
+
+        static RegistryState empty() {
+            return new RegistryState(Map.of(), List.of());
+        }
+    }
+
+    /**
+     * Current registry state. AtomicReference ensures thread-safe atomic replacement of the entire
+     * state during reload operations.
+     */
+    private final AtomicReference<RegistryState> state =
+            new AtomicReference<>(RegistryState.empty());
+
+    /**
+     * Result of loading block builder services from a module directory.
+     *
+     * @param services - the map of loaded block builder services by block type id.
+     * @param classLoader - the URLClassLoader used to load the services.
+     */
+    protected record ModuleLoadResult(
+            Map<String, BlockBuilderService> services,
+            URLClassLoader classLoader) {
+    }
 
     /**
      * Load block builder services from each subdirectory of the top level modules directory.
@@ -90,12 +124,7 @@ public class BlockRegistryImpl implements BlockRegistry {
             throws IOException {
 
         // Check if path is exists and is a directory.
-        if (!Files.exists(topLevelModulesDirectoryPath)
-                || !Files.isDirectory(topLevelModulesDirectoryPath)) {
-            throw new ConfigurationMismatchException(
-                    "topLevelModulesDirectoryPath must exist and be a directory: "
-                            + topLevelModulesDirectoryPath);
-        }
+        validateDirectory(topLevelModulesDirectoryPath);
 
         // Traverse the directory. The structure of the directory is:
         // CHECKSTYLE:OFF
@@ -115,18 +144,47 @@ public class BlockRegistryImpl implements BlockRegistry {
         // @formatter:on
         // CHECKSTYLE:ON
 
-        // Anyway, clear the map of block builder services.
-        blockBuilderServices.clear();
+        // Load all services into new collections first.
+        Map<String, BlockBuilderService> newServices = new ConcurrentHashMap<>();
+        List<URLClassLoader> newClassLoaders = new ArrayList<>();
 
         try (Stream<Path> paths = Files.list(topLevelModulesDirectoryPath)) {
             var moduleDirectoryPaths = paths.filter(Files::isDirectory).toList();
 
             for (Path moduleDirectoryPath : moduleDirectoryPaths) {
-                Map<String, BlockBuilderService> loadedBlockBuilderServices =
+                ModuleLoadResult result =
                         loadBlockBuilderServicesFromModuleDirectory(moduleDirectoryPath,
                                 acceptableEngineVersions,
-                                removeDuplicateDependencies, getClass());
-                blockBuilderServices.putAll(loadedBlockBuilderServices);
+                                removeDuplicateDependencies);
+                newServices.putAll(result.services());
+                newClassLoaders.add(result.classLoader());
+            }
+        }
+
+        // Atomic state replacement - getAndSet returns old state for cleanup.
+        RegistryState oldState = state.getAndSet(
+                new RegistryState(Map.copyOf(newServices), List.copyOf(newClassLoaders)));
+
+        // Close old ClassLoaders after replacement to prevent resource leaks.
+        closeClassLoaders(oldState.classLoaders());
+
+        LogFx.info(log, "{}: Loaded {} BlockBuilderService(s) total",
+                LogEx.me(), newServices.size());
+    }
+
+    /**
+     * Close the given ClassLoaders.
+     *
+     * @param classLoaders - the list of ClassLoaders to close.
+     */
+    private static void closeClassLoaders(final List<URLClassLoader> classLoaders) {
+
+        for (URLClassLoader classLoader : classLoaders) {
+            try {
+                classLoader.close();
+            } catch (IOException e) {
+                LogFx.warn(log, "{}: Failed to close module ClassLoader: {}",
+                        LogEx.me(), e);
             }
         }
     }
@@ -139,24 +197,24 @@ public class BlockRegistryImpl implements BlockRegistry {
      *        {@link BlockBuilderService#getExpectedEngineVersion()}.
      * @param removeDuplicateDependencies - true if duplicate dependencies should be removed from
      *        the module directory.
-     * @return the map of loaded block builder services by block type id.
+     * @return the ModuleLoadResult containing loaded services and the ClassLoader.
      * @throws IOException - if an I/O error occurs.
      * @throws ConfigurationMismatchException - if the module is not compatible with the given root
      */
-    protected static Map<String, BlockBuilderService> loadBlockBuilderServicesFromModuleDirectory(
+    protected static ModuleLoadResult loadBlockBuilderServicesFromModuleDirectory(
             final Path moduleDirectoryPath,
             final Set<String> acceptableEngineVersions,
-            final boolean removeDuplicateDependencies,
-            final Class<? extends BlockRegistryImpl> clazz)
+            final boolean removeDuplicateDependencies)
             throws IOException {
 
-        if (!Files.exists(moduleDirectoryPath) || !Files.isDirectory(moduleDirectoryPath)) {
-            throw new ConfigurationMismatchException(
-                    "Module directory must exist and be a directory: "
-                            + moduleDirectoryPath);
-        }
+        validateDirectory(moduleDirectoryPath);
+
+        // Deal with duplicate dependencies between module directory and application classpath.
+        // Do it before collecting JAR files.
+        dealWithDuplicateDependencies(moduleDirectoryPath, removeDuplicateDependencies);
 
         // Collect all JAR files from the module directory.
+        // Do it after dealing with duplicate dependencies to avoid duplicate JAR files.
         URL[] jarUrls;
         try (Stream<Path> pathStream = Files.list(moduleDirectoryPath)) {
             jarUrls = pathStream
@@ -169,25 +227,23 @@ public class BlockRegistryImpl implements BlockRegistry {
                                     "Failed to convert path to URL: " + p, e);
                         }
                     })
-                    .filter(Objects::nonNull)
                     .toArray(URL[]::new);
         }
 
-        if (jarUrls.length <= 0) {
+        if (jarUrls.length == 0) {
             throw new ConfigurationMismatchException(
                     "No JAR files found in the module directory: "
                             + moduleDirectoryPath);
         }
 
-        LogEx.info(log, LogEx.me(),
-                "Found " + jarUrls.length + " JAR file(s) in " + moduleDirectoryPath);
+        LogFx.info(log, "{}: Found {} JAR file(s) in {}",
+                LogEx.me(), jarUrls.length, moduleDirectoryPath);
 
-        dealWithDuplicateDependencies(moduleDirectoryPath, removeDuplicateDependencies);
 
         // Create URLClassLoader with parent = ClassLoader of the application.
         // This allows plugins to use classes from the application classpath.
         URLClassLoader moduleClassLoader =
-                new URLClassLoader(jarUrls, clazz.getClassLoader());
+                new URLClassLoader(jarUrls, BlockRegistryImpl.class.getClassLoader());
 
         // Load block builder services through ServiceLoader with specified ClassLoader.
         ServiceLoader<BlockBuilderService> loader =
@@ -206,11 +262,12 @@ public class BlockRegistryImpl implements BlockRegistry {
             List<String> supportedBlockTypeIds = service.getSupportedBlockTypeIds();
             for (String blockTypeId : supportedBlockTypeIds) {
                 loadedServices.put(blockTypeId, service);
-                LogEx.info(log, LogEx.me(), "Loaded BlockBuilderService", blockTypeId);
+                LogFx.info(log, "{}: Loaded BlockBuilderService: {}",
+                        LogEx.me(), blockTypeId);
             }
 
         }
-        return loadedServices;
+        return new ModuleLoadResult(loadedServices, moduleClassLoader);
     }
 
     /**
@@ -233,7 +290,8 @@ public class BlockRegistryImpl implements BlockRegistry {
                     .filter(jarFileName -> !jarFileName.isBlank())
                     .toList();
         } catch (IOException e) {
-            LogEx.warn(log, LogEx.me(), "Failed to list module directory", moduleDirectoryPath);
+            LogFx.warn(log, "{}: Failed to list module directory: {}",
+                    LogEx.me(), moduleDirectoryPath);
             throw new ConfigurationMismatchException(
                     "Failed to list module directory: " + moduleDirectoryPath);
         }
@@ -247,14 +305,12 @@ public class BlockRegistryImpl implements BlockRegistry {
                 .toList();
 
         if (!duplicates.isEmpty()) {
-            LogEx.warn(log, LogEx.me(),
-                    "DUPLICATE DEPENDENCIES DETECTED! The following artifacts exist both in " +
-                            "module directory and application classpath: " + duplicates + ". " +
-                            "This may cause ClassLoader conflicts. Consider removing them from module directory");
+            LogFx.warn(log, "{}: DUPLICATE DEPENDENCIES DETECTED: {}",
+                    LogEx.me(), duplicates);
 
             if (removeDuplicateDependencies) {
-                LogEx.info(log, LogEx.me(),
-                        "Removing duplicate artifact IDs from module directory");
+                LogFx.info(log, "{}: Removing duplicate artifact IDs from module directory",
+                        LogEx.me());
 
                 // Remove duplicate artifact IDs from module directory.
                 for (String duplicate : duplicates) {
@@ -262,10 +318,10 @@ public class BlockRegistryImpl implements BlockRegistry {
                     try {
                         Files.deleteIfExists(duplicatePath);
                     } catch (IOException e) {
-                        LogEx.warn(log, LogEx.me(), "Failed to remove duplicate JAR file",
-                                duplicatePath);
+                        LogFx.warn(log, "{}: Failed to remove duplicate JAR file: {}",
+                                LogEx.me(), duplicatePath);
                         throw new ConfigurationMismatchException(
-                                "Failed to remove duplicate JAR file: " + duplicatePath);
+                                "Failed to remove duplicate JAR file: " + duplicatePath, e);
                     }
                 }
             }
@@ -315,17 +371,50 @@ public class BlockRegistryImpl implements BlockRegistry {
     }
 
     /**
+     * Validate that the path is not null, exists and is a directory.
+     *
+     * @param path - the path to validate.
+     * @param name - the name of the path.
+     */
+    private static void validateDirectory(final Path path) {
+        if (!Files.exists(path) || !Files.isDirectory(path)) {
+            throw new ConfigurationMismatchException(
+                    path + " must exist and be a directory");
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public Block createBlock(final String blockTypeId, Object... ctorArgs) {
 
-        BlockBuilderService service = blockBuilderServices.get(blockTypeId);
+        if (Objects.isNull(blockTypeId) || blockTypeId.isBlank()) {
+            throw new NullArgumentException(
+                    "blockTypeId must not be null or blank");
+        }
+
+        BlockBuilderService service = state.get().services().get(blockTypeId);
         if (Objects.isNull(service)) {
             throw new IllegalArgumentException(
                     "BlockBuilderService for block type id " + blockTypeId + " not found");
         }
 
         return service.buildBlock(blockTypeId, ctorArgs);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void close() {
+
+        // Atomic state replacement with empty state, returns old state for cleanup.
+        RegistryState oldState = state.getAndSet(RegistryState.empty());
+
+        // Close old ClassLoaders after replacement.
+        closeClassLoaders(oldState.classLoaders());
+
+        LogFx.info(log, "{}: BlockRegistry closed, all resources released", LogEx.me());
     }
 }

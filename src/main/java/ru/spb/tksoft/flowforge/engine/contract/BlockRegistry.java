@@ -22,7 +22,7 @@ import ru.spb.tksoft.flowforge.sdk.contract.Block;
  * 
  * @author Konstantin Terskikh, kostus.online.1974@yandex.ru, 2025
  */
-public interface BlockRegistry {
+public interface BlockRegistry extends AutoCloseable {
 
     /**
      * Load block builder services from the top level modules directory.
@@ -43,4 +43,10 @@ public interface BlockRegistry {
      * @return the block.
      */
     Block createBlock(String blockTypeId, Object... ctorArgs);
+
+    /**
+     * Close the registry and release all resources including module ClassLoaders.
+     */
+    @Override
+    void close();
 }

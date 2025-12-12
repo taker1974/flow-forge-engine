@@ -60,7 +60,7 @@
         <slf4j.version>2.0.17</slf4j.version>
 
         <!-- Versions of our own libraries. -->
-        <tk-log-utils.version>2.0.5</tk-log-utils.version>
+        <tk-log-utils.version>2.0.6</tk-log-utils.version>
         <tk-common-exceptions.version>2.0.5</tk-common-exceptions.version>
 
         <!-- Version of FlowForge Block SDK. -->
