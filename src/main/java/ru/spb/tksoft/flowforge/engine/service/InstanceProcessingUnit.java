@@ -16,7 +16,9 @@ package ru.spb.tksoft.flowforge.engine.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import ru.spb.tksoft.flowforge.sdk.enumeration.RunnableState;
 import ru.spb.tksoft.flowforge.engine.exception.CommandFailedException;
 import ru.spb.tksoft.flowforge.engine.exception.InstanceAddFailedException;
@@ -52,11 +54,22 @@ public class InstanceProcessingUnit {
     public static final Duration DEFAULT_PROCESSING_DELAY = Duration.ofSeconds(1);
 
     /**
-     * Instance entry record.
-     * 
-     * @param instance - instance.
+     * Instance entry.
      */
-    protected final record InstanceEntry(Instance instance) {
+    protected final class InstanceEntry {
+
+        @Getter
+        private final Instance instance;
+
+        @Getter
+        @Setter
+        private RunnableState state;
+
+        /** Constructor. */
+        public InstanceEntry(final Instance instance, final RunnableState initialState) {
+            this.instance = instance;
+            this.state = initialState;
+        }
     }
 
     private final Map<Long /* instance id */, InstanceEntry> instances = new ConcurrentHashMap<>();
@@ -157,10 +170,11 @@ public class InstanceProcessingUnit {
      * Processing pool is not necessarily a queue. It can be a set, a list, a map, etc.
      * 
      * @param instance - instance.
+     * @param initialState - initial state of instance: if DONE then instance would not be run.
      * @throws ObjectAlreadyExistsException - if instance already exists.
      * @throws InstanceAddFailedException - if instance add failed.
      */
-    public void addInstance(final Instance instance) {
+    public void addInstance(final Instance instance, final RunnableState initialState) {
 
         LogEx.trace(log, LogEx.me(), LogEx.STARTING, instance.getInstanceId());
 
@@ -168,7 +182,7 @@ public class InstanceProcessingUnit {
             throw new ObjectAlreadyExistsException("instance already exists");
         }
 
-        InstanceEntry instanceEntry = new InstanceEntry(instance);
+        InstanceEntry instanceEntry = new InstanceEntry(instance, initialState);
 
         try {
             instances.put(instance.getInstanceId(), instanceEntry);
@@ -255,14 +269,16 @@ public class InstanceProcessingUnit {
             throw new ConfigurationMismatchException("instance is not configured");
         }
 
-        // Do nothing if the instance is not ready or running.
-        if (instance.getState() != RunnableState.READY &&
-                instance.getState() != RunnableState.RUNNING) {
-            return;
+        // Run the instance if ready.
+        if (instance.getState().isReadyToRun()) {
+            instance.run();
         }
 
-        // Run the instance.
-        instance.run();
+        // Copy state to instance entry if instance is stopped by any way.
+        final RunnableState state = instance.getState();
+        if (!state.isReadyToRun()) {
+            instanceEntry.setState(state);
+        }
 
         LogEx.trace(log, LogEx.me(), LogEx.STOPPED);
     }
@@ -270,9 +286,10 @@ public class InstanceProcessingUnit {
     /**
      * Process each command in the command queue. Process each instance in the pool.
      * 
-     * Warning: this method is not thread-safe.
+     * This method is public for debugging and testing purposes only. Warning: this method is not
+     * thread-safe.
      */
-    protected void processTick() {
+    public void processTick() {
 
         if (instances.isEmpty()) {
             commandQueue.clear();
@@ -292,7 +309,10 @@ public class InstanceProcessingUnit {
             switch (commandEntry.command) {
 
                 // Set instance to READY state without resetting it.
-                case SET_READY -> instance.setReady();
+                case SET_READY -> {
+                    instance.setReady();
+                    instanceEntry.setState(instance.getState());
+                }
 
                 case PAUSE, RESUME -> {
                     // Not supported yet.
@@ -306,9 +326,9 @@ public class InstanceProcessingUnit {
             }
         }
 
-        // Run each instance.
+        // Run each instance. Do the job in runInstance.
         instances.values().stream()
-                .filter(instanceEntry -> instanceEntry.instance.getState().isReadyToRun())
+                .filter(entry -> entry.getState().isReadyToRun()) // entry! not instance itself!
                 .forEach(this::runInstance);
     }
 }

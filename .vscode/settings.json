@@ -1,4 +1,14 @@
 {
+    "java.format.settings.url": ".vscode/eclipse-java-google-style.xml",
+    "java.configuration.updateBuildConfiguration": "interactive",
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "interactive"
+
+    "editor.fontSize": 15,
+    "editor.fontFamily": "Fira Code",
+    "editor.fontLigatures": true,
+    "editor.showFoldingControls": "always",
+    "editor.minimap.enabled": false,
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.linkedEditing": true
 }

@@ -21,12 +21,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.spb.tksoft.common.exceptions.ConfigurationMismatchException;
 import ru.spb.tksoft.common.exceptions.NullArgumentException;
+import ru.spb.tksoft.flowforge.engine.contract.Instance;
+import ru.spb.tksoft.flowforge.engine.model.BlockBaseTest;
 import ru.spb.tksoft.flowforge.engine.model.InstanceImpl;
 import ru.spb.tksoft.flowforge.engine.model.InstanceParameters;
 import ru.spb.tksoft.flowforge.engine.model.InstanceParameter;
@@ -37,7 +40,10 @@ import ru.spb.tksoft.flowforge.sdk.contract.LineJunction;
 import ru.spb.tksoft.flowforge.sdk.contract.Modifiable;
 import ru.spb.tksoft.flowforge.sdk.enumeration.LineState;
 import ru.spb.tksoft.flowforge.sdk.enumeration.RunnableState;
+import ru.spb.tksoft.flowforge.sdk.model.BlockBaseImpl;
+import ru.spb.tksoft.flowforge.sdk.model.LineImpl;
 import ru.spb.tksoft.flowforge.engine.model.ModifiableChangedEvent;
+import ru.spb.tksoft.flowforge.engine.service.InstanceProcessingUnit;
 
 /**
  * Tests for InstanceImpl.
@@ -51,18 +57,74 @@ class InstanceImplTest {
     private static final Long INSTANCE_USER_ID = 200L;
     private static final String INSTANCE_NAME = "Test Instance";
 
-    private InstanceImpl instance;
+
+    private InstanceProcessingUnit instanceProcessingUnit;
+    private Instance instance;
     private InstanceParameters parameters;
     private List<Block> blocks;
     private List<Line> lines;
 
     @BeforeEach
     void setUp() {
+        instanceProcessingUnit = new InstanceProcessingUnit();
         blocks = new ArrayList<>();
         lines = new ArrayList<>();
         parameters = new InstanceParameters(Collections.emptyList());
         instance = new InstanceImpl(INSTANCE_ID, TEMPLATE_ID, INSTANCE_USER_ID, INSTANCE_NAME,
                 parameters, blocks, lines);
+    }
+
+    private Instance createInstance(final Long instanceId, final Long templateId,
+            final Long userId, final String instanceName,
+            final InstanceParameters parameters,
+            final List<Block> blocks, final List<Line> lines) {
+
+        return new InstanceImpl(instanceId, templateId, userId, instanceName,
+                parameters, blocks, lines);
+    }
+
+    @Test
+    void testBlocksInInstance() {
+
+        blocks = Arrays.asList(
+                new BlockBaseTest("block1", "Input text for block 1"),
+                new BlockBaseTest("block2", "Input text for block 2"));
+
+        lines = Arrays.asList(
+                new LineImpl("1-2",
+                        blocks.get(0).getInternalBlockId(), blocks.get(1).getInternalBlockId()));
+
+        lines.stream()
+                .forEach(line -> {
+                    if (line instanceof LineImpl impl) {
+                        impl.resolveBlocks(blocks);
+                    }
+                });
+
+        blocks.stream()
+                .forEach(block -> {
+                    if (block instanceof BlockBaseImpl impl) {
+                        impl.resolveLines(lines);
+                    }
+                });
+
+        instance = createInstance(INSTANCE_ID, TEMPLATE_ID, INSTANCE_USER_ID, "Test Instance",
+                new InstanceParameters(Collections.emptyList()),
+                blocks, lines);
+
+        instanceProcessingUnit.addInstance(instance, RunnableState.READY);
+        Assertions.assertThat(instance.getState()).isEqualTo(RunnableState.READY);
+
+        int i = 0;
+        for (; i < 100; i++) {
+            instanceProcessingUnit.processTick();
+            if (instance.getState() == RunnableState.DONE) {
+                break;
+            }
+        }
+
+        Assertions.assertThat(i).isEqualTo(12);
+        Assertions.assertThat(instance.getState()).isEqualTo(RunnableState.DONE);
     }
 
     @Test
