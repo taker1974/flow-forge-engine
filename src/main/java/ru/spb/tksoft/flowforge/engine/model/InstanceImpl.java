@@ -21,6 +21,7 @@ import ru.spb.tksoft.flowforge.sdk.contract.Block;
 import ru.spb.tksoft.flowforge.sdk.contract.EventListener;
 import ru.spb.tksoft.flowforge.sdk.contract.Line;
 import ru.spb.tksoft.flowforge.sdk.contract.Modifiable;
+import ru.spb.tksoft.flowforge.sdk.contract.Pausable;
 import ru.spb.tksoft.flowforge.sdk.enumeration.LineState;
 import ru.spb.tksoft.flowforge.sdk.enumeration.RunnableState;
 import java.util.ArrayList;
@@ -421,6 +422,61 @@ public final class InstanceImpl implements Instance {
         LogEx.info(log, LogEx.me(), getLogText("reset completed"));
     }
 
+    /** Indicates whether the instance is paused. */
+    private volatile boolean paused = false;
+
+    /**
+     * Pause the instance.
+     */
+    @Override
+    public synchronized void pause() {
+        if (isPaused()) {
+            return;
+        }
+
+        blocks.stream()
+                .forEach(block -> {
+                    if (block instanceof Pausable pausable) {
+                        pausable.pause();
+                    }
+                });
+
+        paused = true;
+        setModified();
+        LogEx.info(log, LogEx.me(), getLogText("instance paused"));
+    }
+
+    /**
+     * Resume the instance.
+     */
+    @Override
+    public synchronized void resume() {
+        if (!isPaused()) {
+            return;
+        }
+
+        blocks.stream()
+                .forEach(block -> {
+                    if (block instanceof Pausable pausable) {
+                        pausable.resume();
+                    }
+                });
+
+        paused = false;
+        setModified();
+        LogEx.info(log, LogEx.me(), getLogText("instance resumed"));
+    }
+
+    /**
+     * Check if the instance is paused.
+     * 
+     * @return true if the instance is paused, false otherwise.
+     */
+    @Override
+    public synchronized boolean isPaused() {
+        return paused;
+    }
+
     /**
      * Run the instance.
      */
@@ -430,6 +486,10 @@ public final class InstanceImpl implements Instance {
         if (state == RunnableState.NOT_CONFIGURED) {
             setError(true, "Instance is not configured");
             throw new ConfigurationMismatchException(getLogText(getErrorMessage()));
+        }
+
+        if (isPaused()) {
+            return;
         }
 
         if (state == RunnableState.READY) {

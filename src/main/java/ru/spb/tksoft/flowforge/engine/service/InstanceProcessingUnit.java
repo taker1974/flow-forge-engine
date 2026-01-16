@@ -270,7 +270,7 @@ public class InstanceProcessingUnit {
         }
 
         // Run the instance if ready.
-        if (instance.getState().isReadyToRun()) {
+        if (instance.getState().isReadyToRun() && !instance.isPaused()) {
             instance.run();
         }
 
@@ -314,9 +314,8 @@ public class InstanceProcessingUnit {
                     instanceEntry.setState(instance.getState());
                 }
 
-                case PAUSE, RESUME -> {
-                    // Not supported yet.
-                }
+                case PAUSE -> instance.pause();
+                case RESUME -> instance.resume();
 
                 case STOP -> instance.stop();
                 case ABORT -> instance.abort();
@@ -328,7 +327,8 @@ public class InstanceProcessingUnit {
 
         // Run each instance. Do the job in runInstance.
         instances.values().stream()
-                .filter(entry -> entry.getState().isReadyToRun()) // entry! not instance itself!
+                .filter(entry -> entry.getState().isReadyToRun() &&
+                        !entry.instance.isPaused()) // entry! not instance itself!
                 .forEach(this::runInstance);
     }
 }

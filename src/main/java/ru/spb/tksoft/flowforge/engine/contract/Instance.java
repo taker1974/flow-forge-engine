@@ -19,13 +19,16 @@ import ru.spb.tksoft.flowforge.sdk.contract.Runnable;
 import ru.spb.tksoft.flowforge.sdk.contract.Modifiable;
 import ru.spb.tksoft.flowforge.sdk.contract.EventProducer;
 import ru.spb.tksoft.flowforge.engine.model.ModifiableChangedEvent;
+import ru.spb.tksoft.flowforge.sdk.contract.Pausable;
 
 /**
  * Instance interface.
  * 
  * @author Konstantin Terskikh, kostus.online.1974@yandex.ru, 2025
  */
-public interface Instance extends Runnable, Modifiable, EventProducer<ModifiableChangedEvent> {
+public interface Instance
+        extends Runnable, Pausable,
+        Modifiable, EventProducer<ModifiableChangedEvent> {
 
     /**
      * Get the source template id.
