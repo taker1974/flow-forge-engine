@@ -202,9 +202,12 @@ public class InstanceProcessingUnit {
      * @param ownerId - owner ID.
      * @param name - instance name.
      * @param state - instance state.
+     * @param isPaused - is paused.
+     * @param hasError - has error.
+     * @param errorMessage - error message.
      */
     public record InstanceListItem(Long instanceId, Long ownerId, String name,
-            RunnableState state) {
+            RunnableState state, Boolean isPaused, Boolean hasError, String errorMessage) {
     }
 
     /**
@@ -220,7 +223,10 @@ public class InstanceProcessingUnit {
                 .map(instanceEntry -> new InstanceListItem(instanceEntry.instance.getInstanceId(),
                         instanceEntry.instance.getInstanceUserId(),
                         instanceEntry.instance.getInstanceName(),
-                        instanceEntry.instance.getState()))
+                        instanceEntry.instance.getState(),
+                        instanceEntry.instance.isPaused(),
+                        instanceEntry.instance.hasError(),
+                        instanceEntry.instance.getErrorMessage()))
                 .toList();
     }
 
