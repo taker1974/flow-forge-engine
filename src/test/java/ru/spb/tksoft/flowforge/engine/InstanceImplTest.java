@@ -48,7 +48,7 @@ import ru.spb.tksoft.flowforge.engine.service.InstanceProcessingUnit;
 /**
  * Tests for InstanceImpl.
  *
- * @author Konstantin Terskikh, kostus.online.1974@yandex.ru, 2025
+ * @author Konstantin Terskikh, kostus.online.1974@yandex.ru, 2025-2026
  */
 class InstanceImplTest {
 
@@ -56,7 +56,6 @@ class InstanceImplTest {
     private static final Long INSTANCE_ID = 100L;
     private static final Long INSTANCE_USER_ID = 200L;
     private static final String INSTANCE_NAME = "Test Instance";
-
 
     private InstanceProcessingUnit instanceProcessingUnit;
     private Instance instance;
@@ -87,8 +86,8 @@ class InstanceImplTest {
     void testBlocksInInstance() {
 
         blocks = Arrays.asList(
-                new BlockBaseTest("block1", "Input text for block 1"),
-                new BlockBaseTest("block2", "Input text for block 2"));
+                new BlockBaseTest("block1", "Block 1", "Input text for block 1"),
+                new BlockBaseTest("block2", "Block 2", "Input text for block 2"));
 
         lines = Arrays.asList(
                 new LineImpl("1-2",

@@ -75,4 +75,4 @@ This module is part of the FlowForge project and follows the same licensing term
 
 Константин Терских
 Email: <kostus.online.1974@yandex.ru>, <kostus.online@gmail.com>
-Санкт-Петербург, 2025 год
+Санкт-Петербург, 2025-2026

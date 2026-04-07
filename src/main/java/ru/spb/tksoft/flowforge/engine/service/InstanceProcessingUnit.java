@@ -155,7 +155,7 @@ public class InstanceProcessingUnit {
             if (!scheduler.awaitTermination(timeout, unit)) {
                 scheduler.shutdownNow();
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _) {
             scheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
@@ -252,7 +252,7 @@ public class InstanceProcessingUnit {
 
         try {
             commandQueue.add(new CommandEntry(command, instanceId));
-        } catch (Exception e) {
+        } catch (Exception _) {
             throw new CommandFailedException(
                     "failed to add command " + command + " for instance " + instanceId);
         }

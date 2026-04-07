@@ -14,13 +14,12 @@
 
 package ru.spb.tksoft.flowforge.engine.exception;
 
-import java.util.Objects;
 import ru.spb.tksoft.common.exceptions.TkBaseException;
 
 /**
  * Instance add failed.
  * 
- * @author Konstantin Terskikh, kostus.online.1974@yandex.ru, 2025
+ * @author Konstantin Terskikh, kostus.online.1974@yandex.ru, 2025-2026
  */
 public class InstanceAddFailedException extends TkBaseException {
 
@@ -43,9 +42,9 @@ public class InstanceAddFailedException extends TkBaseException {
      * 
      * @param subMessage - additional message.
      */
-    public InstanceAddFailedException(String subMessage) {
+    public InstanceAddFailedException(final String subMessage) {
 
-        super(CODE, MESSAGE + ": " + (Objects.isNull(subMessage) ? "" : subMessage));
+        super(CODE, MESSAGE + ": " + subMessage);
     }
 
     /**
@@ -53,7 +52,7 @@ public class InstanceAddFailedException extends TkBaseException {
      * 
      * @param cause - cause.
      */
-    public InstanceAddFailedException(Throwable cause) {
+    public InstanceAddFailedException(final Throwable cause) {
 
         super(CODE, MESSAGE, cause);
     }
@@ -64,8 +63,8 @@ public class InstanceAddFailedException extends TkBaseException {
      * @param subMessage - additional message.
      * @param cause - cause.
      */
-    public InstanceAddFailedException(String subMessage, Throwable cause) {
+    public InstanceAddFailedException(final String subMessage, final Throwable cause) {
 
-        super(CODE, MESSAGE + ": " + (Objects.isNull(subMessage) ? "" : subMessage), cause);
+        super(CODE, MESSAGE + ": " + subMessage, cause);
     }
 }

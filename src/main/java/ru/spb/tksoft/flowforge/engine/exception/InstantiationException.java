@@ -14,13 +14,12 @@
 
 package ru.spb.tksoft.flowforge.engine.exception;
 
-import java.util.Objects;
 import ru.spb.tksoft.common.exceptions.TkBaseException;
 
 /**
  * Instantiation exception.
  * 
- * @author Konstantin Terskikh, kostus.online.1974@yandex.ru, 2025
+ * @author Konstantin Terskikh, kostus.online.1974@yandex.ru, 2025-2026
  */
 public class InstantiationException extends TkBaseException {
 
@@ -43,9 +42,9 @@ public class InstantiationException extends TkBaseException {
      * 
      * @param subMessage - additional message.
      */
-    public InstantiationException(String subMessage) {
+    public InstantiationException(final String subMessage) {
 
-        super(CODE, MESSAGE + ": " + (Objects.isNull(subMessage) ? "" : subMessage));
+        super(CODE, MESSAGE + ": " + subMessage);
     }
 
     /**
@@ -53,7 +52,7 @@ public class InstantiationException extends TkBaseException {
      * 
      * @param cause - cause.
      */
-    public InstantiationException(Throwable cause) {
+    public InstantiationException(final Throwable cause) {
 
         super(CODE, MESSAGE, cause);
     }
@@ -64,8 +63,8 @@ public class InstantiationException extends TkBaseException {
      * @param subMessage - additional message.
      * @param cause - cause.
      */
-    public InstantiationException(String subMessage, Throwable cause) {
+    public InstantiationException(final String subMessage, final Throwable cause) {
 
-        super(CODE, MESSAGE + ": " + (Objects.isNull(subMessage) ? "" : subMessage), cause);
+        super(CODE, MESSAGE + ": " + subMessage, cause);
     }
 }

@@ -289,7 +289,7 @@ public class BlockRegistryImpl implements BlockRegistry {
                     .map(p -> p.getFileName().toString())
                     .filter(jarFileName -> !jarFileName.isBlank())
                     .toList();
-        } catch (IOException e) {
+        } catch (IOException _) {
             LogFx.warn(log, "{}: Failed to list module directory: {}",
                     LogEx.me(), moduleDirectoryPath);
             throw new ConfigurationMismatchException(

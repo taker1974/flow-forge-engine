@@ -27,10 +27,10 @@ import ru.spb.tksoft.flowforge.sdk.model.RunnableStateChangedEvent;
 public final class BlockBaseTest extends BlockBaseImpl
         implements RunnableStateChangeListener {
 
-    public BlockBaseTest(final String internalBlockId,
+    public BlockBaseTest(final String internalBlockId, final String label,
             final String defaultInputText) {
 
-        super("test-block", internalBlockId, defaultInputText);
+        super("test-block", label, internalBlockId, defaultInputText);
         addStateChangeListener(this);
     }
 
